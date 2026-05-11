@@ -252,3 +252,58 @@ Or manually: find `boot-args` in config.plist, append ` -wegnoegpu` to the strin
 | Prebuilt SSDT using generic ACPI path | Hardware Constraint (device-specific ACPI paths) |
 | dGPU probe causing graphics panic | Missing Dependency (no NVIDIA driver in macOS) |
 | WhateverGreen flag as software fallback | Defense in Depth (two mechanisms for same goal) |
+
+---
+
+## Error 4: Kernel Panic - NVMe Command Timeout (SK hynix PC611)
+
+**Date:** 2026-05-11
+**Stage:** 5 (third boot attempt - after VoodooInput and dGPU fixes)
+**Status:** CURRENT BLOCKER
+
+### Symptoms
+
+Boot progressed significantly - macOS userspace was already running (launchd spawning `findmymacd` at PID 378, `pboard` at PID 377). Then kernel panic:
+
+```
+panic: nvme: "". Command timeout. Delete IO submission queue.
+fBuiltIn=1 MODEL=Model string not available
+```
+
+Stack trace:
+```
+IONVMeFamily -> IONVMeController::RequestAsyncEvents
+IOTimerEventSource::timeoutSignaled
+```
+
+### Diagnosis
+
+The SK hynix PC611 NVMe controller (PCI [1c5c:1639]) has firmware-level incompatibilities with macOS's `IONVMeFamily` driver. The drive works fine in Linux and Windows, but macOS's NVMe driver sends async event requests that the PC611 firmware fails to respond to within the timeout window.
+
+Key indicators:
+- Panic happens AFTER successful boot into userspace (not during early boot)
+- `MODEL=Model string not available` confirms macOS can't properly identify the drive
+- `fBuiltIn=1` means macOS detected it as an internal drive
+- The panic is in the NVMe async event handler, not in read/write I/O
+
+This was missed in the pre-build hardware analysis. The PC611 was rated "Native, no NVMeFix needed" based on PCI device ID family matching. That assessment was incorrect - firmware behavior matters more than device ID for NVMe compatibility.
+
+### Options
+
+| Option | Approach | Pros | Cons |
+|--------|----------|------|------|
+| A | Add `nvme_force_uefi=1` boot arg | No cost, immediate test | Slower UEFI NVMe protocol, possible runtime panics under heavy I/O |
+| B | Replace NVMe drive | Guaranteed fix with known-good hardware | $50-80 cost, one-day delay, need to clone Ubuntu first |
+
+Recommended replacement drives (confirmed macOS compatible):
+- Samsung 970 EVO Plus 1TB
+- WD Black SN770 1TB
+- Crucial P5 Plus 1TB
+
+### Pattern
+
+| Issue | Pattern Category |
+|-------|-----------------|
+| NVMe firmware incompatible despite matching PCI device ID family | Hardware Constraint |
+| Pre-build analysis missed firmware-level behavior | Missing Dependency (community reports needed, not just specs) |
+| Panic deep in userspace proves config is sound | Defense in Depth (isolates problem to hardware) |

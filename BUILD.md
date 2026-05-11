@@ -54,7 +54,7 @@ Mode: UEFI
 | Bluetooth Intel AX201 | USB [8087:0026] | IntelBluetoothFirmware |
 | Audio Realtek ALC257 via Comet Lake cAVS | [8086:06c8] | AppleALC.kext, layout-id 17 |
 | Ethernet Intel I219-LM | [8086:0d4c] | IntelMausi.kext (native) |
-| NVMe SK hynix PC611 | [1c5c:1639] | Native, no NVMeFix needed |
+| NVMe SK hynix PC611 | [1c5c:1639] | INCOMPATIBLE - firmware-level NVMe command timeout panics (see Build Log) |
 | Camera Bison UVC | USB [5986:9106] | Native UVC |
 | Trackpad Synaptics I2C | I2C bus | VoodooI2C + VoodooI2CHID |
 | Fingerprint reader | USB [06cb:00bd] | No driver, accept loss |
@@ -88,11 +88,11 @@ What WILL work: iCloud, iMessage, FaceTime, App Store, Camera, Audio, Sleep, Eth
 ## The 8-Stage Build Roadmap
 
 ```
-Stage 1: BIOS Settings              <- CURRENT
-Stage 2: Download macOS Installer
-Stage 3: Build OpenCore EFI
-Stage 4: Write Installer to USB
-Stage 5: Boot Installer + Wipe NVMe + Install macOS
+Stage 1: BIOS Settings              <- DONE
+Stage 2: Download macOS Installer   <- DONE
+Stage 3: Build OpenCore EFI         <- DONE
+Stage 4: Write Installer to USB     <- DONE
+Stage 5: Boot Installer + Wipe NVMe + Install macOS  <- BLOCKED (NVMe)
 Stage 6: First Boot + Copy EFI to Internal Disk
 Stage 7: Post-Install Kexts + Polish (trackpad, audio, sleep)
 Stage 8: Validate iCloud, iMessage, App Store
@@ -169,6 +169,51 @@ To be downloaded fresh from each project's releases page at Stage 3:
 - AppleALC supported codecs: https://github.com/acidanthera/AppleALC/wiki/Supported-codecs
 - Hackintosh.com 2026 status page: https://hackintosh.com
 
+## Build Log
+
+### Session 1: 2026-05-11 (BIOS through first install attempt)
+
+**Stage 1 (BIOS Settings): COMPLETE**
+
+- Secure Boot: Disabled (validated via `mokutil --sb-state` on Ubuntu)
+- CFG Lock: Locked at firmware level. Validated via `sudo rdmsr 0xE2` returning `0x1E008008`, bit 15 = 1. Lenovo BIOS does not expose toggle. Mitigated with `AppleXcpmCfgLock=true` in OpenCore.
+- Graphics Device selector: Not exposed in BIOS. Mitigated with SSDT-DDGPU.aml hotpatch in EFI.
+- Kernel DMA Protection: Disabled.
+- Other Security menu items (SGX, TXT, Memory Protection, Fast Boot): Disabled per checklist.
+
+**Stages 2 to 4 (macOS installer, OpenCore EFI, USB write): COMPLETE on Windows**
+
+- macOS Sonoma 14.6.1 (build 23G93) installer downloaded via macrecovery.py
+- BaseSystem.dmg validated at 753 MB
+- OpenCore EFI built with MacBookPro16,1 SMBIOS
+- USB validated structurally sound after GenSMBIOS serial generation and SSDT-XOSI.aml addition
+
+**Stage 5 (First install attempt): BLOCKED on NVMe**
+
+Issues hit, in order:
+
+1. **HideAuxiliary=true hid the DMG entry from OpenCore picker.** Default config had it set TRUE. Workaround: press SPACE in OpenCore picker to reveal auxiliary entries. Permanent fix pending: set HideAuxiliary=false in Misc/Boot.
+
+2. **First kernel panic: VoodooInput.kext duplicate UUID.** Error message: `Refusing new kext me.kishorprins.VoodooInput. v1.1.6: a prelinked copy with a different executable UUID is already present`. Followed by `vm_map_delete` panic at `vm_map.c:8235`. Root cause: VoodooInput was loaded both as standalone kext in EFI/OC/Kexts and as nested plugin inside another kext's PlugIns folder, with mismatched binary versions. Fix applied: removed duplicate Kernel/Add entry, kept standalone only. Resynced USB EFI. Result: panic resolved on retry.
+
+3. **Second kernel panic: NVMe command timeout (CURRENT BLOCKER).** Error: `panic: nvme: ". Command timeout. Delete IO submission queue. fBuiltIn=1 MODEL=Model string not available"`. Stack trace points to `IONVMeFamily->IONVMeController18RequestAsyncEvents` with `IOTimerEventSource15timeoutSignaledEPvS0_`. macOS Sonoma userspace was already launching (launchd spawning findmymacd at PID 378, pboard at PID 377) when the kernel panicked on NVMe controller timeout. Boot args attempted: default set, then with `-wegnoegpu` added. Not yet tried: `nvme_force_uefi=1`. Root cause: SK hynix PC611 NVMe controller firmware has known incompatibilities with macOS IONVMeFamily driver. Initial hardware analysis rated PC611 as "native, no NVMeFix needed" based on PCI device ID family match. That assessment missed the firmware-level behavior issue.
+
+Stage 5 status: BLOCKED. Decision pending:
+- Option A: Try `nvme_force_uefi=1` boot arg, accept slower UEFI NVMe protocol, accept possible runtime panics under heavy I/O
+- Option B: Replace NVMe with Samsung 970 EVO Plus, WD SN770, or Crucial P5 Plus 1TB. Clone Ubuntu off PC611 first, swap drive, clean macOS install. Estimated cost $50 to $80, one-day delay.
+
+## Lessons Learned (Session 1)
+
+1. PASS at file-presence level in pre-Stage-5 validation does not prove specific config values match the target hardware exactly. Static validation catches structural issues but not behavioral mismatches.
+
+2. SPACE in OpenCore picker is a critical debugging keystroke. It reveals auxiliary entries (DMG mounts, Recovery volumes) hidden by HideAuxiliary=true defaults.
+
+3. Kernel panics that occur deep in userspace boot (after launchd starts spawning services) indicate the build configuration is structurally sound and remaining issues are hardware-specific or driver-specific, not config errors.
+
+4. Hardware compatibility analysis for Hackintosh must include firmware-level community reports, not just PCI device ID family matching. The SK hynix PC611 case is a clear example: same Navi-class PCI family as supported drives, but firmware quirks break macOS's NVMe driver.
+
+5. The reference build approach worked. The community EFI for the same ThinkPad model was a reliable starting point, and the divergences (different Wi-Fi card, Xeon vs i7) were manageable. The hardware-specific failure (NVMe) was not in the reference build because that author had a different NVMe model.
+
 ## Pattern Library Notes
 
 Issues encountered and their pattern category:
@@ -180,6 +225,10 @@ Issues encountered and their pattern category:
 | Wi-Fi AX201 CNVi cannot be swapped to Broadcom for AirDrop | Hardware Constraint |
 | CFG Lock typically not exposed in Lenovo BIOS | Config Hierarchy Override |
 | Thunderbolt sleep issues across all Hackintosh laptops | State Drift |
+| HideAuxiliary=true hides macOS installer entries from OpenCore picker | Config Hierarchy Override |
+| VoodooInput.kext loaded from standalone and nested plugin paths with mismatched UUIDs | Version Mismatch |
+| SK hynix PC611 NVMe firmware incompatible with macOS IONVMeFamily despite matching PCI device ID family | Hardware Constraint |
+| Hardware compatibility rated from PCI device ID alone misses firmware-level behavior issues | Missing Dependency |
 
 ## Status Log
 
@@ -191,3 +240,5 @@ Issues encountered and their pattern category:
 | 2026-05-11 | Stage 3 | DONE: OpenCore EFI built - 18 kexts, 5 SSDTs, 3 drivers, config.plist complete |
 | 2026-05-11 | Stage 4 | DONE: USB formatted (FAT32 GPT), EFI + recovery copied to E: (OCUSB) |
 | 2026-05-11 | Stage 4 | BLOCKER: config.plist PlatformInfo needs GenSMBIOS serials before first boot |
+| 2026-05-11 | Stage 4 | RESOLVED: GenSMBIOS serials generated, SSDT-XOSI added, ocvalidate clean |
+| 2026-05-11 | Stage 5 attempt 1 | VoodooInput duplicate UUID panic resolved on retry. Blocked on SK hynix PC611 NVMe command timeout. Decision pending: try nvme_force_uefi=1 boot arg, or swap NVMe to Samsung 970 EVO Plus class drive. |
