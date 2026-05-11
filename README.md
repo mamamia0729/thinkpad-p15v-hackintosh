@@ -11,3 +11,11 @@ End-of-life Intel Hackintosh build on a Lenovo ThinkPad P15v Gen 1 (20TRS00T00),
 ## Documentation
 
 See [BUILD.md](BUILD.md) for the full hardware inventory, decisions, kext list, and 8-stage build roadmap.
+
+## Author
+
+Thinh Le
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
