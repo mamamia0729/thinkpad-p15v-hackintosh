@@ -187,3 +187,5 @@ Issues encountered and their pattern category:
 |------|-------|--------|
 | 2026-05-11 | Pre-build | Hardware inventory captured, decisions locked, full backup pending |
 | 2026-05-11 | Stage 1 | BIOS settings checklist provided, awaiting execution |
+| 2026-05-11 | Stage 2 | Automated: `scripts/download-installer.sh` ready to run |
+| 2026-05-11 | Stage 3 | Automated: `scripts/download-kexts.sh` ready to run (downloads all kexts + OpenCore) |
