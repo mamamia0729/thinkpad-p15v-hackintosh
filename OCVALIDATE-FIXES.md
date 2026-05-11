@@ -13,9 +13,9 @@ These keys are required by OpenCore 1.0.7's schema but were absent from the hand
 | # | Error | Section | Fix | Value |
 |---|-------|---------|-----|-------|
 | 1 | `Missing key SyncTableIds` | ACPI/Quirks | Added key | `false` |
-| 2 | `Missing key ClearTaskSwitchBit` | Booter/Quirks | Added key (initially placed in Kernel/Quirks by mistake — moved in Round 2) | `false` |
+| 2 | `Missing key ClearTaskSwitchBit` | Booter/Quirks | Added key (initially placed in Kernel/Quirks by mistake - moved in Round 2) | `false` |
 | 3 | `Missing key FixupAppleEfiImages` | Booter/Quirks | Added key | `false` |
-| 4 | `Missing key CustomPciSerialDevice` | Kernel/Quirks | Added key (took 3 rounds to find correct location — see Round 3-4 notes below) | `false` |
+| 4 | `Missing key CustomPciSerialDevice` | Kernel/Quirks | Added key (took 3 rounds to find correct location - see Round 3-4 notes below) | `false` |
 | 5 | `Missing key DisableIoMapperMapping` | Kernel/Quirks | Added key | `false` |
 | 6 | `Missing key ExternalDiskIcons` | Kernel/Quirks | Added key | `false` |
 | 7 | `Missing key ForceAquantiaEthernet` | Kernel/Quirks | Added key | `false` |
@@ -53,15 +53,15 @@ After first fix pass, 6 remained:
 | # | Error | Root Cause | Fix |
 |---|-------|-----------|-----|
 | 1 | `Missing key ClearTaskSwitchBit, context <Quirks>` | Was added to Kernel/Quirks instead of Booter/Quirks | Moved to Booter/Quirks |
-| 2 | `No schema for ClearTaskSwitchBit at 22 index, context <Quirks>` | Same — wrong section | Removed from Kernel/Quirks |
-| 3 | `Missing key CustomPciSerialDevice, context <Quirks>` | Not yet placed correctly | Tried Misc/Serial — wrong |
+| 2 | `No schema for ClearTaskSwitchBit at 22 index, context <Quirks>` | Same - wrong section | Removed from Kernel/Quirks |
+| 3 | `Missing key CustomPciSerialDevice, context <Quirks>` | Not yet placed correctly | Tried Misc/Serial - wrong |
 | 4-6 | `Missing key PointerPollMask/Max/Min, context <AppleInput>` | AppleInput section was incomplete | Added `PointerPollMask: -1`, `PointerPollMax: 80`, `PointerPollMin: 10` |
 
 ## Round 3: 2 errors
 
 | # | Error | Root Cause | Fix |
 |---|-------|-----------|-----|
-| 1 | `Missing key CustomPciSerialDevice, context <Quirks>` | Placed in Misc/Serial — wrong section | Searched official Sample.plist |
+| 1 | `Missing key CustomPciSerialDevice, context <Quirks>` | Placed in Misc/Serial - wrong section | Searched official Sample.plist |
 | 2 | `No schema for CustomPciSerialDevice at 3 index, context <Serial>` | Same | Found correct location: Kernel/Quirks |
 
 ### How we found the correct location
@@ -89,7 +89,7 @@ Result: `Location: /Kernel/Quirks/CustomPciSerialDevice = False`
 Completed validating E:/EFI/OC/config.plist in 1 ms. No issues found.
 ```
 
-## UEFI/AppleInput — Full Default Section
+## UEFI/AppleInput - Full Default Section
 
 This entire section was missing and had to be created:
 

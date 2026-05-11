@@ -188,6 +188,6 @@ Issues encountered and their pattern category:
 | 2026-05-11 | Pre-build | Hardware inventory captured, decisions locked, full backup pending |
 | 2026-05-11 | Stage 1 | BIOS settings checklist provided, awaiting execution |
 | 2026-05-11 | Stage 2 | DONE: macOS Sonoma recovery downloaded (BaseSystem.dmg 753MB) |
-| 2026-05-11 | Stage 3 | DONE: OpenCore EFI built — 18 kexts, 5 SSDTs, 3 drivers, config.plist complete |
+| 2026-05-11 | Stage 3 | DONE: OpenCore EFI built - 18 kexts, 5 SSDTs, 3 drivers, config.plist complete |
 | 2026-05-11 | Stage 4 | DONE: USB formatted (FAT32 GPT), EFI + recovery copied to E: (OCUSB) |
 | 2026-05-11 | Stage 4 | BLOCKER: config.plist PlatformInfo needs GenSMBIOS serials before first boot |

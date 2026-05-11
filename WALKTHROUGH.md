@@ -29,13 +29,13 @@ A step-by-step guide for installing macOS Sonoma 14.7 on a Lenovo ThinkPad P15v 
 - **Lenovo ThinkPad P15v Gen 1** (model 20TRS00T00 or similar with the same CPU/iGPU)
 - **USB flash drive**, 16 GB or larger
 - **A second computer** (Windows or Linux) to prepare the USB drive
-- **Ethernet cable** (recommended for the install — Wi-Fi works but Ethernet is more reliable during setup)
+- **Ethernet cable** (recommended for the install - Wi-Fi works but Ethernet is more reliable during setup)
 
 ### Software (on your second computer)
 
-- **Python 3** — download from [python.org](https://www.python.org/downloads/) if you don't have it
-- **Git** — download from [git-scm.com](https://git-scm.com/downloads)
-- **GitHub CLI (gh)** — download from [cli.github.com](https://cli.github.com). After installing, run `gh auth login` to sign in
+- **Python 3** - download from [python.org](https://www.python.org/downloads/) if you don't have it
+- **Git** - download from [git-scm.com](https://git-scm.com/downloads)
+- **GitHub CLI (gh)** - download from [cli.github.com](https://cli.github.com). After installing, run `gh auth login` to sign in
 
 ### Knowledge Check
 
@@ -47,7 +47,7 @@ You don't need to be a programmer, but you should be comfortable with:
 
 ### Time Estimate
 
-Expect 5-7 hours spread over a weekend. Each stage is a safe stopping point — you can take a break between any two stages.
+Expect 5-7 hours spread over a weekend. Each stage is a safe stopping point - you can take a break between any two stages.
 
 ---
 
@@ -60,11 +60,11 @@ The BIOS is the low-level software that runs before your operating system boots.
 1. Shut down the ThinkPad completely
 2. Press the power button
 3. Immediately start tapping **F1** repeatedly until the BIOS screen appears
-4. You'll see a blue/gray menu — use arrow keys to navigate, Enter to select
+4. You'll see a blue/gray menu - use arrow keys to navigate, Enter to select
 
 ### Settings to Change
 
-Go through each menu below and change the listed settings. If a setting isn't there, skip it — not all BIOS versions show every option.
+Go through each menu below and change the listed settings. If a setting isn't there, skip it - not all BIOS versions show every option.
 
 #### Security Menu
 | Setting | Change To | Why |
@@ -129,7 +129,7 @@ We're downloading macOS directly from Apple's servers. No existing Mac is needed
    bash scripts/download-installer.sh
    ```
 
-3. **Wait for the download** — it's about 750 MB from Apple's CDN. Takes 5-15 minutes depending on your internet speed.
+3. **Wait for the download** - it's about 750 MB from Apple's CDN. Takes 5-15 minutes depending on your internet speed.
 
 4. **Verify the download succeeded.** You should see two files in `staging/installer/sonoma-recovery/com.apple.recovery.boot/`:
    - `BaseSystem.dmg` (about 750 MB)
@@ -249,7 +249,7 @@ foreach ($d in $dirs) { New-Item -ItemType Directory -Path "$usb\$d" -Force }
    - `OC/Resources/*` → `E:\EFI\OC\Resources\` (icons for boot menu)
    - `OC/Tools/OpenShell.efi` → `E:\EFI\OC\Tools\`
 
-3. **Download HfsPlus.efi** (Apple's HFS+ filesystem driver — required):
+3. **Download HfsPlus.efi** (Apple's HFS+ filesystem driver - required):
    ```
    curl -L "https://github.com/acidanthera/OcBinaryData/raw/master/Drivers/HfsPlus.efi" -o E:\EFI\OC\Drivers\HfsPlus.efi
    ```
@@ -261,7 +261,7 @@ Extract each zip from `staging/kexts/` and copy the `.kext` folders to `E:\EFI\O
 **Important notes:**
 - Only use the **RELEASE** versions (not DEBUG)
 - For **AirportItlwm**, use the **Sonoma 14.4** version (matches our target macOS)
-- Some kexts contain **plugins** inside them (e.g., VoodooPS2Controller.kext has VoodooPS2Keyboard.kext inside it). Don't copy the plugins separately — they stay nested inside the parent kext
+- Some kexts contain **plugins** inside them (e.g., VoodooPS2Controller.kext has VoodooPS2Keyboard.kext inside it). Don't copy the plugins separately - they stay nested inside the parent kext
 - **Remove kexts you don't need:** SMCDellSensors (Dell only), SMCSuperIO (desktops), IntelSnowMausi (ancient), AppleALCU (digital-only audio), IntelBluetoothInjector (Catalina only)
 
 Your final kext list should be:
@@ -371,14 +371,14 @@ If you see errors, check [OCVALIDATE-FIXES.md](OCVALIDATE-FIXES.md) for solution
 1. Plug the USB drive into the ThinkPad
 2. Power on and press **F12** at the Lenovo splash screen to open the boot menu
 3. Select your USB drive (it may show as "EFI USB Device" or "UEFI: [your USB name]")
-4. You should see the **OpenCore boot picker** — a graphical menu with icons
+4. You should see the **OpenCore boot picker** - a graphical menu with icons
 5. Select **"macOS Base System"** (or the recovery option)
 
 ### What to Expect
 
-- The screen will fill with white text on a black background (verbose boot). This is normal — it's macOS loading with debug output enabled
+- The screen will fill with white text on a black background (verbose boot). This is normal - it's macOS loading with debug output enabled
 - First boot takes 2-5 minutes. Be patient
-- If you see a line that says `End SetPowerState` and nothing happens for 30+ seconds, that's usually fine — wait up to 5 minutes
+- If you see a line that says `End SetPowerState` and nothing happens for 30+ seconds, that's usually fine - wait up to 5 minutes
 - If the screen goes black and the laptop reboots, see [Troubleshooting](#10-troubleshooting)
 
 ### Install macOS
@@ -426,7 +426,7 @@ macOS is installed, but it can only boot via the USB drive. We need to copy the 
    sudo mkdir -p /Volumes/USBEFI
    sudo mount -t msdos /dev/disk2s1 /Volumes/USBEFI
    ```
-   (Your USB disk number may differ — check `diskutil list`)
+   (Your USB disk number may differ - check `diskutil list`)
 
 6. Copy the EFI folder:
    ```bash
@@ -450,7 +450,7 @@ After macOS is running from the internal drive, test and fine-tune:
 | TrackPoint | Red nub mouse | Handled by VoodooPS2Mouse plugin |
 | Screen brightness | Fn+F5/F6 | Check SSDT-PNLF.aml is in ACPI folder |
 | Audio | Speakers + headphone jack | Check AppleALC.kext and `alcid=17` in boot-args |
-| Wi-Fi | Connects to networks | AirportItlwm — may need to forget and rejoin networks |
+| Wi-Fi | Connects to networks | AirportItlwm - may need to forget and rejoin networks |
 | Bluetooth | Pairs devices | IntelBluetoothFirmware.kext |
 | Ethernet | Works immediately | IntelMausi.kext |
 | Battery | Shows percentage | SMCBatteryManager + ECEnabler |
@@ -465,7 +465,7 @@ Once everything is stable, you can remove the debug text that shows on every boo
 1. Mount the EFI partition (same process as Stage 6)
 2. Open `EFI/OC/config.plist` in a text editor
 3. Find the `boot-args` line and remove `-v` from the string
-4. Save and reboot — you'll now see a clean Apple logo during boot
+4. Save and reboot - you'll now see a clean Apple logo during boot
 
 ---
 
@@ -492,10 +492,10 @@ Once everything is stable, you can remove the debug text that shows on every boo
 
 ### What Won't Work (Expected)
 
-- **AirDrop, Handoff, Universal Clipboard** — requires a Broadcom Wi-Fi card, which we can't swap (Intel AX201 is soldered into the chipset)
-- **Fingerprint reader** — no macOS driver exists
-- **SD card reader** — no macOS driver exists
-- **Apple Watch unlock** — same limitation as AirDrop
+- **AirDrop, Handoff, Universal Clipboard** - requires a Broadcom Wi-Fi card, which we can't swap (Intel AX201 is soldered into the chipset)
+- **Fingerprint reader** - no macOS driver exists
+- **SD card reader** - no macOS driver exists
+- **Apple Watch unlock** - same limitation as AirDrop
 
 ---
 
@@ -538,19 +538,19 @@ Once everything is stable, you can remove the debug text that shows on every boo
 
 | Term | Meaning |
 |------|---------|
-| **BIOS** | Basic Input/Output System — firmware that runs before your OS. On modern laptops, technically UEFI firmware |
-| **UEFI** | Unified Extensible Firmware Interface — the modern replacement for BIOS |
+| **BIOS** | Basic Input/Output System - firmware that runs before your OS. On modern laptops, technically UEFI firmware |
+| **UEFI** | Unified Extensible Firmware Interface - the modern replacement for BIOS |
 | **EFI partition** | A small FAT32 partition on your disk where the bootloader lives |
 | **OpenCore** | The bootloader that makes macOS think your PC is a real Mac |
-| **Kext** | Kernel Extension — macOS equivalent of a driver |
-| **SSDT** | Secondary System Description Table — ACPI code that patches your laptop's hardware tables for macOS compatibility |
-| **ACPI** | Advanced Configuration and Power Interface — how the OS talks to hardware |
+| **Kext** | Kernel Extension - macOS equivalent of a driver |
+| **SSDT** | Secondary System Description Table - ACPI code that patches your laptop's hardware tables for macOS compatibility |
+| **ACPI** | Advanced Configuration and Power Interface - how the OS talks to hardware |
 | **config.plist** | OpenCore's master configuration file (XML format) |
-| **SMBIOS** | System Management BIOS — the identity we assign to make macOS think this is a MacBookPro16,1 |
-| **iGPU** | Integrated GPU — the Intel UHD P630 built into the CPU |
-| **dGPU** | Discrete GPU — the NVIDIA Quadro P620 (separate chip, disabled for macOS) |
+| **SMBIOS** | System Management BIOS - the identity we assign to make macOS think this is a MacBookPro16,1 |
+| **iGPU** | Integrated GPU - the Intel UHD P630 built into the CPU |
+| **dGPU** | Discrete GPU - the NVIDIA Quadro P620 (separate chip, disabled for macOS) |
 | **Device-ID spoof** | Telling macOS that our UHD P630 is actually a UHD 630, so it loads the right driver |
-| **CNVi** | Connectivity Integration — Intel's way of building Wi-Fi into the chipset, meaning the card can't be physically swapped |
+| **CNVi** | Connectivity Integration - Intel's way of building Wi-Fi into the chipset, meaning the card can't be physically swapped |
 | **GenSMBIOS** | A tool to generate fake-but-valid Apple serial numbers |
 | **ocvalidate** | OpenCore's built-in config validation tool |
 | **Verbose boot** | The `-v` flag that shows all boot messages as text instead of the Apple logo |
@@ -560,7 +560,7 @@ Once everything is stable, you can remove the debug text that shows on every boo
 ## Credits
 
 - **Author:** Thinh Le
-- [Dortania OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide) — the definitive Hackintosh resource
-- [OpenIntelWireless](https://openintelwireless.github.io) — Intel Wi-Fi and Bluetooth for macOS
-- [Acidanthera](https://github.com/acidanthera) — OpenCore, Lilu, VirtualSMC, WhateverGreen, AppleALC, and more
-- [ivan19871002/Thinkpad-P15V-Gen1-Hackintosh](https://github.com/ivan19871002/Thinkpad-P15V-Gen1-Hackintosh) — reference build for this model
+- [Dortania OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide) - the definitive Hackintosh resource
+- [OpenIntelWireless](https://openintelwireless.github.io) - Intel Wi-Fi and Bluetooth for macOS
+- [Acidanthera](https://github.com/acidanthera) - OpenCore, Lilu, VirtualSMC, WhateverGreen, AppleALC, and more
+- [ivan19871002/Thinkpad-P15V-Gen1-Hackintosh](https://github.com/ivan19871002/Thinkpad-P15V-Gen1-Hackintosh) - reference build for this model

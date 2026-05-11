@@ -29,7 +29,7 @@ download_latest() {
     local name
     name=$(basename "$repo")
 
-    echo "[*] $name — fetching latest release..."
+    echo "[*] $name - fetching latest release..."
     mkdir -p "$dest/$name"
 
     if gh release download --repo "$repo" --pattern "$pattern" --dir "$dest/$name" --clobber 2>/dev/null; then
@@ -87,7 +87,7 @@ echo "════════════════════════�
 if [ "$FAIL_COUNT" -eq 0 ]; then
     echo "  ✓ All downloads complete!"
 else
-    echo "  ⚠ $FAIL_COUNT download(s) failed — check output above"
+    echo "  ⚠ $FAIL_COUNT download(s) failed - check output above"
 fi
 echo ""
 echo "  Kexts:    $KEXT_DIR/"
