@@ -182,3 +182,73 @@ for k in p['Kernel']['Add']:
         print(f'  2: {k["BundlePath"]}')
     seen[name] = k['BundlePath']
 ```
+
+---
+
+## Error 3: Kernel Panic - IOGraphics / dGPU not fully disabled
+
+**Date:** 2026-05-11
+**Stage:** 5 (third boot attempt from USB installer)
+
+### Symptoms
+
+Verbose boot got past `EXITBS:START` and into IOKit service initialization. Services like `com.apple.logd` and `FinderKit` started loading, then panic:
+
+```
+vm_shared_region_start_address() failed
+```
+
+Panic backtrace included:
+- `com.apple.iokit.IOGraphicsFamily`
+- `com.apple.iokit.IONDRVSupport`
+- `com.apple.iokit.IOPCIFamily`
+
+### Diagnosis
+
+The presence of `IONDRVSupport` in the backtrace indicates the NVIDIA Quadro P620 dGPU was still being probed during graphics initialization, despite `SSDT-DDGPU.aml` being present.
+
+The prebuilt `SSDT-dGPU-Off.aml` from Dortania uses generic ACPI paths (`_SB.PCI0.PEG0.PEGP`) that may not match the ThinkPad P15v's specific ACPI path for the NVIDIA GPU. If the path doesn't match, the SSDT has no effect and the dGPU remains active. macOS has no driver for NVIDIA Pascal GPUs, causing the graphics subsystem to panic.
+
+### Fix
+
+Added `-wegnoegpu` to boot-args. This is a WhateverGreen flag that disables all discrete/external GPUs at the driver level, regardless of ACPI path.
+
+```
+boot-args: -v keepsyms=1 debug=0x100 alcid=17 -igfxblr -wegnoegpu
+```
+
+This is a belt-and-suspenders approach: SSDT-DDGPU handles it at the ACPI level, `-wegnoegpu` handles it at the WhateverGreen/driver level. Even if one fails, the other catches it.
+
+### How to Apply
+
+Using Python:
+
+```python
+import plistlib
+
+with open('E:/EFI/OC/config.plist', 'rb') as f:
+    p = plistlib.load(f)
+
+nvram = p['NVRAM']['Add']['7C436110-AB2A-4BBB-A880-FE41995C9F82']
+if '-wegnoegpu' not in nvram['boot-args']:
+    nvram['boot-args'] += ' -wegnoegpu'
+
+with open('E:/EFI/OC/config.plist', 'wb') as f:
+    plistlib.dump(p, f, fmt=plistlib.FMT_XML, sort_keys=False)
+```
+
+Or manually: find `boot-args` in config.plist, append ` -wegnoegpu` to the string.
+
+### Notes
+
+- If macOS installs successfully with `-wegnoegpu`, the SSDT-DDGPU can be investigated post-install by dumping the real ACPI tables with `SysReport` and finding the correct ACPI path for the NVIDIA GPU
+- `-wegnoegpu` has zero performance cost since we're using iGPU only anyway
+- This flag is permanent-safe - no reason to remove it on a laptop where the dGPU will never be used in macOS
+
+### Pattern
+
+| Issue | Pattern Category |
+|-------|-----------------|
+| Prebuilt SSDT using generic ACPI path | Hardware Constraint (device-specific ACPI paths) |
+| dGPU probe causing graphics panic | Missing Dependency (no NVIDIA driver in macOS) |
+| WhateverGreen flag as software fallback | Defense in Depth (two mechanisms for same goal) |
