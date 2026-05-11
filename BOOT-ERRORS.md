@@ -92,3 +92,93 @@ Or manually in a text editor:
 | SecureBootModel rejecting valid recovery DMG | Config Value Mismatch (default too restrictive) |
 | SetupVirtualMap wrong for specific firmware | Hardware Constraint (firmware-specific behavior) |
 | Two errors masking each other | Compound Failure (fix both to see progress) |
+
+---
+
+## Error 2: Kernel Panic - VoodooInput Duplicate UUID
+
+**Date:** 2026-05-11
+**Stage:** 5 (second boot attempt from USB installer)
+
+### Symptoms
+
+Verbose boot progressed past `EXITBS:START` (Error 1 fix worked) but hit a kernel panic:
+
+```
+Refusing new kext io.VoodooInput - v1.1.6: a prelinked copy with a different executable UUID is already present.
+```
+
+Followed by a full panic backtrace and halt.
+
+### Diagnosis
+
+Two copies of VoodooInput.kext existed on the USB, both registered in config.plist:
+
+| Location | Version | SHA1 |
+|----------|---------|------|
+| VoodooI2C.kext/Contents/PlugIns/VoodooInput.kext | 1.1.6 | e37c0005... |
+| VoodooPS2Controller.kext/Contents/PlugIns/VoodooInput.kext | 1.1.6 | 7d40d66d... |
+
+Same version, same bundle identifier (`me.kishorprins.VoodooInput`), but **different compiled binaries** (different SHA1 hashes). When both load, the kernel sees two kexts claiming the same identifier with different UUIDs and panics.
+
+### Root Cause
+
+Both VoodooI2C and VoodooPS2Controller ship their own copy of VoodooInput as a plugin. Our config.plist had explicit `Kernel/Add` entries for both:
+
+- Entry [18]: `VoodooI2C.kext/Contents/PlugIns/VoodooInput.kext` (Enabled)
+- Entry [24]: `VoodooPS2Controller.kext/Contents/PlugIns/VoodooInput.kext` (Enabled)
+
+Only one can load. The physical files inside the parent kexts don't need to be deleted - just don't tell OpenCore to load both.
+
+### Fix
+
+Removed the VoodooI2C nested VoodooInput entry from `Kernel/Add`. Kept the VoodooPS2Controller copy (VoodooPS2 is the canonical upstream source for VoodooInput).
+
+Using Python:
+
+```python
+import plistlib
+
+with open('E:/EFI/OC/config.plist', 'rb') as f:
+    p = plistlib.load(f)
+
+p['Kernel']['Add'] = [
+    k for k in p['Kernel']['Add']
+    if k.get('BundlePath','') != 'VoodooI2C.kext/Contents/PlugIns/VoodooInput.kext'
+]
+
+with open('E:/EFI/OC/config.plist', 'wb') as f:
+    plistlib.dump(p, f, fmt=plistlib.FMT_XML, sort_keys=False)
+```
+
+### After Fix
+
+- VoodooInput entries in config.plist: **1** (VoodooPS2Controller copy only)
+- Total kext entries: 24 (was 25)
+- ocvalidate: 0 errors
+
+### Pattern
+
+| Issue | Pattern Category |
+|-------|-----------------|
+| Two kext bundles shipping the same plugin | Dependency Conflict (diamond dependency) |
+| Same identifier, different binary hashes | UUID Collision |
+| Config listing both copies explicitly | Config Duplication |
+
+### Prevention
+
+When multiple kexts bundle the same plugin (VoodooInput, VoodooGPIO, etc.), only register ONE in config.plist. Check for duplicates with:
+
+```python
+import plistlib
+with open('config.plist', 'rb') as f:
+    p = plistlib.load(f)
+seen = {}
+for k in p['Kernel']['Add']:
+    name = k['BundlePath'].split('/')[-1]
+    if name in seen:
+        print(f'DUPLICATE: {name}')
+        print(f'  1: {seen[name]}')
+        print(f'  2: {k["BundlePath"]}')
+    seen[name] = k['BundlePath']
+```
