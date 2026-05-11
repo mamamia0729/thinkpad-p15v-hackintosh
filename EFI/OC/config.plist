@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-
-	<!-- ======================== ACPI ======================== -->
 	<key>ACPI</key>
 	<dict>
 		<key>Add</key>
@@ -48,11 +46,58 @@
 				<key>Path</key>
 				<string>SSDT-AWAC.aml</string>
 			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>OS spoof for I2C trackpad on ThinkPad</string>
+				<key>Enabled</key>
+				<true/>
+				<key>Path</key>
+				<string>SSDT-XOSI.aml</string>
+			</dict>
 		</array>
 		<key>Delete</key>
 		<array/>
 		<key>Patch</key>
-		<array/>
+		<array>
+			<dict>
+				<key>Base</key>
+				<string></string>
+				<key>BaseSkip</key>
+				<integer>0</integer>
+				<key>Comment</key>
+				<string>Rename _OSI to XOSI for trackpad</string>
+				<key>Count</key>
+				<integer>0</integer>
+				<key>Enabled</key>
+				<true/>
+				<key>Find</key>
+				<data>
+				X09TSQ==
+				</data>
+				<key>Limit</key>
+				<integer>0</integer>
+				<key>Mask</key>
+				<data>
+				</data>
+				<key>OemTableId</key>
+				<data>
+				</data>
+				<key>Replace</key>
+				<data>
+				WE9TSQ==
+				</data>
+				<key>ReplaceMask</key>
+				<data>
+				</data>
+				<key>Skip</key>
+				<integer>0</integer>
+				<key>TableLength</key>
+				<integer>0</integer>
+				<key>TableSignature</key>
+				<data>
+				</data>
+			</dict>
+		</array>
 		<key>Quirks</key>
 		<dict>
 			<key>FadtEnableReset</key>
@@ -65,10 +110,10 @@
 			<false/>
 			<key>ResetLogoStatus</key>
 			<false/>
+			<key>SyncTableIds</key>
+			<false/>
 		</dict>
 	</dict>
-
-	<!-- ======================== Booter ======================== -->
 	<key>Booter</key>
 	<dict>
 		<key>MmioWhitelist</key>
@@ -117,47 +162,50 @@
 			<false/>
 			<key>SyncRuntimePermissions</key>
 			<true/>
+			<key>FixupAppleEfiImages</key>
+			<false/>
+			<key>ClearTaskSwitchBit</key>
+			<false/>
 		</dict>
 	</dict>
-
-	<!-- ======================== DeviceProperties ======================== -->
 	<key>DeviceProperties</key>
 	<dict>
 		<key>Add</key>
 		<dict>
-			<!-- iGPU: UHD P630 spoofed to UHD 630 -->
 			<key>PciRoot(0x0)/Pci(0x2,0x0)</key>
 			<dict>
 				<key>AAPL,ig-platform-id</key>
-				<data>AACbPg==</data>
-				<!-- 00009B3E - laptop with connectors -->
+				<data>
+				AACbPg==
+				</data>
 				<key>device-id</key>
-				<data>xZsAAA==</data>
-				<!-- 9BC50000 - UHD 630 -->
+				<data>
+				xZsAAA==
+				</data>
 				<key>framebuffer-patch-enable</key>
-				<data>AQAAAA==</data>
+				<data>
+				AQAAAA==
+				</data>
 				<key>framebuffer-stolenmem</key>
-				<data>AAAwAQ==</data>
-				<!-- 19MB DVMT prealloc workaround -->
+				<data>
+				AAAwAQ==
+				</data>
 			</dict>
-			<!-- Audio: Realtek ALC257, layout-id 17 -->
 			<key>PciRoot(0x0)/Pci(0x1F,0x3)</key>
 			<dict>
 				<key>layout-id</key>
-				<data>EQAAAA==</data>
-				<!-- 17 decimal = 0x11 -->
+				<data>
+				EQAAAA==
+				</data>
 			</dict>
 		</dict>
 		<key>Delete</key>
 		<dict/>
 	</dict>
-
-	<!-- ======================== Kernel ======================== -->
 	<key>Kernel</key>
 	<dict>
 		<key>Add</key>
 		<array>
-			<!-- 1. Lilu - must load first -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -176,7 +224,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 2. VirtualSMC -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -195,7 +242,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 3. SMCBatteryManager -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -214,7 +260,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 4. SMCLightSensor -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -233,7 +278,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 5. SMCProcessor -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -252,7 +296,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 6. WhateverGreen -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -271,7 +314,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 7. AppleALC -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -290,7 +332,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 8. IntelMausi -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -309,7 +350,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 9. AirportItlwm -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -328,7 +368,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 10. IntelBluetoothFirmware -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -347,7 +386,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 11. IntelBTPatcher -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -366,7 +404,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 12. NVMeFix -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -385,7 +422,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 13. ECEnabler -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -404,7 +440,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 14. USBToolBox -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -423,7 +458,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 15. UTBDefault -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -442,7 +476,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 16. VoodooI2C -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -461,7 +494,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- VoodooI2C bundled plugins -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -516,7 +548,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 17. VoodooI2CHID -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -535,7 +566,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- 18. VoodooPS2Controller -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -554,7 +584,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<!-- VoodooPS2 bundled plugins -->
 			<dict>
 				<key>Arch</key>
 				<string>x86_64</string>
@@ -633,9 +662,11 @@
 		<key>Emulate</key>
 		<dict>
 			<key>Cpuid1Data</key>
-			<data></data>
+			<data>
+			</data>
 			<key>Cpuid1Mask</key>
-			<data></data>
+			<data>
+			</data>
 			<key>DummyPowerManagement</key>
 			<false/>
 			<key>MaxKernel</key>
@@ -651,10 +682,8 @@
 		<dict>
 			<key>AppleCpuPmCfgLock</key>
 			<true/>
-			<!-- SET TO false IF CFG LOCK IS DISABLED IN BIOS -->
 			<key>AppleXcpmCfgLock</key>
 			<true/>
-			<!-- SET TO false IF CFG LOCK IS DISABLED IN BIOS -->
 			<key>AppleXcpmExtraMsrs</key>
 			<false/>
 			<key>AppleXcpmForceBoost</key>
@@ -685,6 +714,18 @@
 			<false/>
 			<key>XhciPortLimit</key>
 			<false/>
+			<key>DisableIoMapperMapping</key>
+			<false/>
+			<key>ExternalDiskIcons</key>
+			<false/>
+			<key>ForceAquantiaEthernet</key>
+			<false/>
+			<key>ForceSecureBootScheme</key>
+			<false/>
+			<key>IncreasePciBarSize</key>
+			<false/>
+			<key>CustomPciSerialDevice</key>
+			<false/>
 		</dict>
 		<key>Scheme</key>
 		<dict>
@@ -698,8 +739,6 @@
 			<string>Auto</string>
 		</dict>
 	</dict>
-
-	<!-- ======================== Misc ======================== -->
 	<key>Misc</key>
 	<dict>
 		<key>BlessOverride</key>
@@ -734,6 +773,8 @@
 			<integer>0</integer>
 			<key>Timeout</key>
 			<integer>5</integer>
+			<key>InstanceIdentifier</key>
+			<string></string>
 		</dict>
 		<key>Debug</key>
 		<dict>
@@ -775,9 +816,11 @@
 			<key>HaltLevel</key>
 			<integer>2147483648</integer>
 			<key>PasswordHash</key>
-			<data></data>
+			<data>
+			</data>
 			<key>PasswordSalt</key>
-			<data></data>
+			<data>
+			</data>
 			<key>ScanPolicy</key>
 			<integer>0</integer>
 			<key>SecureBootModel</key>
@@ -800,16 +843,20 @@
 				<key>LineControl</key>
 				<integer>3</integer>
 				<key>PciDeviceInfo</key>
-				<data>AAAAAAA=</data>
+				<data>
+				AAAAAP8=
+				</data>
 				<key>RegisterAccessWidth</key>
 				<integer>8</integer>
 				<key>RegisterBase</key>
 				<integer>1016</integer>
 				<key>RegisterStride</key>
 				<integer>1</integer>
-				<key>UseForDebugLog</key>
-				<false/>
 				<key>UseMmio</key>
+				<false/>
+				<key>ExtendedTxFifoSize</key>
+				<integer>64</integer>
+				<key>UseHardwareFlowControl</key>
 				<false/>
 			</dict>
 			<key>Init</key>
@@ -838,11 +885,11 @@
 				<false/>
 				<key>TextMode</key>
 				<false/>
+				<key>FullNvramAccess</key>
+				<false/>
 			</dict>
 		</array>
 	</dict>
-
-	<!-- ======================== NVRAM ======================== -->
 	<key>NVRAM</key>
 	<dict>
 		<key>Add</key>
@@ -850,21 +897,28 @@
 			<key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
 			<dict>
 				<key>DefaultBackgroundColor</key>
-				<data>AAAAAA==</data>
+				<data>
+				AAAAAA==
+				</data>
 				<key>UIScale</key>
-				<data>AQ==</data>
+				<data>
+				AQ==
+				</data>
 			</dict>
 			<key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
 			<dict>
 				<key>rtc-blacklist</key>
-				<data></data>
+				<data>
+				</data>
 			</dict>
 			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
 			<dict>
 				<key>boot-args</key>
 				<string>-v keepsyms=1 debug=0x100 alcid=17 -igfxblr</string>
 				<key>csr-active-config</key>
-				<data>AAAAAA==</data>
+				<data>
+				AAAAAA==
+				</data>
 				<key>prev-lang:kbd</key>
 				<string>en-US:0</string>
 				<key>run-efi-updater</key>
@@ -893,12 +947,6 @@
 		<key>WriteFlash</key>
 		<true/>
 	</dict>
-
-	<!-- ======================== PlatformInfo ======================== -->
-	<!-- IMPORTANT: Generate unique values using GenSMBIOS before first boot.
-	     Run GenSMBIOS, select option 1 to download MacSerial, then option 3
-	     and enter MacBookPro16,1 to generate Serial, MLB, and UUID.
-	     For ROM, use your Ethernet MAC address (6 bytes, no colons). -->
 	<key>PlatformInfo</key>
 	<dict>
 		<key>Automatic</key>
@@ -910,13 +958,15 @@
 			<key>AdviseFeatures</key>
 			<false/>
 			<key>MLB</key>
-			<string>CHANGE_ME_USE_GenSMBIOS</string>
+			<string>C02904501QXN9PRAD</string>
 			<key>MaxBIOSVersion</key>
 			<false/>
 			<key>ProcessorType</key>
 			<integer>0</integer>
 			<key>ROM</key>
-			<data>AAAAAAAA</data>
+			<data>
+			7fPztwEO
+			</data>
 			<key>SpoofVendor</key>
 			<true/>
 			<key>SystemMemoryStatus</key>
@@ -924,9 +974,9 @@
 			<key>SystemProductName</key>
 			<string>MacBookPro16,1</string>
 			<key>SystemSerialNumber</key>
-			<string>CHANGE_ME_USE_GenSMBIOS</string>
+			<string>C02Y5YYFMD6N</string>
 			<key>SystemUUID</key>
-			<string>CHANGE_ME_USE_GenSMBIOS</string>
+			<string>64027C6F-2A97-4952-BAE5-20987647B87F</string>
 		</dict>
 		<key>UpdateDataHub</key>
 		<true/>
@@ -939,8 +989,6 @@
 		<key>UseRawUuidEncoding</key>
 		<false/>
 	</dict>
-
-	<!-- ======================== UEFI ======================== -->
 	<key>UEFI</key>
 	<dict>
 		<key>APFS</key>
@@ -1007,7 +1055,7 @@
 				<key>Enabled</key>
 				<true/>
 				<key>LoadEarly</key>
-				<true/>
+				<false/>
 				<key>Path</key>
 				<string>OpenRuntime.efi</string>
 			</dict>
@@ -1077,6 +1125,10 @@
 			<integer>-1</integer>
 			<key>UgaPassThrough</key>
 			<false/>
+			<key>ConsoleFont</key>
+			<string></string>
+			<key>InitialMode</key>
+			<string>Auto</string>
 		</dict>
 		<key>ProtocolOverrides</key>
 		<dict>
@@ -1116,7 +1168,7 @@
 			<false/>
 			<key>PciIo</key>
 			<false/>
-			<key>Unicode</key>
+			<key>UnicodeCollation</key>
 			<false/>
 		</dict>
 		<key>Quirks</key>
@@ -1156,7 +1208,37 @@
 		</dict>
 		<key>ReservedMemory</key>
 		<array/>
+		<key>AppleInput</key>
+		<dict>
+			<key>AppleEvent</key>
+			<string>Builtin</string>
+			<key>CustomDelays</key>
+			<false/>
+			<key>GraphicsInputMirroring</key>
+			<true/>
+			<key>KeyInitialDelay</key>
+			<integer>50</integer>
+			<key>KeySubsequentDelay</key>
+			<integer>5</integer>
+			<key>PointerSpeedDiv</key>
+			<integer>1</integer>
+			<key>PointerSpeedMul</key>
+			<integer>1</integer>
+			<key>PointerDwellClickTimeout</key>
+			<integer>0</integer>
+			<key>PointerDwellDoubleClickTimeout</key>
+			<integer>0</integer>
+			<key>PointerDwellRadius</key>
+			<integer>0</integer>
+			<key>PointerPollMask</key>
+			<integer>-1</integer>
+			<key>PointerPollMax</key>
+			<integer>80</integer>
+			<key>PointerPollMin</key>
+			<integer>10</integer>
+		</dict>
+		<key>Unload</key>
+		<array/>
 	</dict>
-
 </dict>
 </plist>
