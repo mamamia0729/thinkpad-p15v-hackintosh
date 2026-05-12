@@ -330,17 +330,24 @@ No boot picker displayed. Hard stop.
 
 HfsPlus.efi was physically present on the USB at `E:\EFI\OC\Drivers\HfsPlus.efi` (37,892 bytes) and SHA1-matched the official Acidanthera OcBinaryData release (`7356a825b619cd954a4d83599d6032c38ab009d5`). config.plist `UEFI/Drivers/Add[0]` correctly referenced `HfsPlus.efi`.
 
-The file was NOT missing or corrupted at the binary level. The likely cause was FAT32 filesystem directory/allocation table corruption from the earlier 884 MB Sequoia BaseSystem.dmg copy operation to the same USB partition. The large file write may have corrupted neighboring FAT32 directory entries, making the file invisible to OpenCore's UEFI filesystem driver despite being readable from Windows/Linux.
+Initial theory was FAT32 directory corruption from the 884 MB Sequoia file copy. Re-syncing drivers and reformatting the USB did not fix the issue. The error persisted across multiple attempts on the same USB (Generic Flash Disk).
+
+### Root Cause
+
+**Faulty USB drive.** The Generic Flash Disk had hardware-level issues causing UEFI firmware to fail reading files even though Windows/Linux could still access them. Confirmed by baking an identical EFI + recovery image onto a second USB drive (VendorCo ProductCode, same ~29 GB size) - booted successfully on first try.
 
 Also discovered: the build directory's `EFI/OC/Drivers/` folder was empty - drivers only existed on the USB, not in the repo's build directory.
 
 ### Fix
 
-1. Downloaded fresh HfsPlus.efi from Acidanthera OcBinaryData repo as reference
-2. Populated the build directory's `EFI/OC/Drivers/` with all three drivers (HfsPlus.efi, OpenRuntime.efi, OpenCanopy.efi)
-3. Deleted all three drivers from USB and re-copied from build directory to force fresh FAT32 directory entries
-4. Verified SHA1 match between USB and build directory copies
-5. Cross-checked all config.plist driver references against folder contents (3/3 match)
+1. Replaced the faulty USB drive with a different one
+2. Formatted new USB as GPT FAT32
+3. Copied full EFI and Sonoma recovery from build directory/staging
+4. Booted successfully on first attempt
+
+Secondary fix (still valuable):
+5. Populated the build directory's `EFI/OC/Drivers/` with all three drivers as canonical source
+6. Cross-checked all config.plist driver references against folder contents (3/3 match)
 
 ### Verification
 
@@ -356,12 +363,12 @@ Also discovered: the build directory's `EFI/OC/Drivers/` folder was empty - driv
 
 | Issue | Pattern Category |
 |-------|-----------------|
-| Large file copy corrupting FAT32 directory entries | Filesystem Corruption (write side-effect) |
-| File present on disk but invisible to UEFI driver | Environmental Mismatch (OS vs firmware filesystem view) |
+| File present on disk but invisible to UEFI firmware | Faulty Hardware (USB drive failure) |
+| Windows/Linux reads fine but UEFI cannot | Environmental Mismatch (OS vs firmware filesystem view) |
 | Build directory missing drivers (only on USB) | Sync Gap (source of truth incomplete) |
 
 ### Prevention
 
-- After any large file write to a FAT32 USB, re-verify all existing files by deleting and re-copying them to force fresh directory entries
+- If OpenCore reports missing files that are verifiably present, try a different USB drive before debugging further
+- Keep a second USB drive baked and ready as a quick swap test
 - Keep the build directory's `EFI/OC/Drivers/` populated as the canonical source - never let the USB be the only copy
-- Run a driver cross-check (config.plist vs folder contents) before every boot attempt
