@@ -307,3 +307,61 @@ Recommended replacement drives (confirmed macOS compatible):
 | NVMe firmware incompatible despite matching PCI device ID family | Hardware Constraint |
 | Pre-build analysis missed firmware-level behavior | Missing Dependency (community reports needed, not just specs) |
 | Panic deep in userspace proves config is sound | Defense in Depth (isolates problem to hardware) |
+
+---
+
+## Error 5: OC: Driver HfsPlus.efi at 0 cannot be found!
+
+**Date:** 2026-05-11
+**Stage:** 5 (boot attempt after NVMe swap to WD PC SN810 and Sequoia installer upgrade)
+
+### Symptoms
+
+OpenCore picker loaded but immediately halted with:
+
+```
+OC: Driver HfsPlus.efi at 0 cannot be found!
+Halting on critical error
+```
+
+No boot picker displayed. Hard stop.
+
+### Diagnosis
+
+HfsPlus.efi was physically present on the USB at `E:\EFI\OC\Drivers\HfsPlus.efi` (37,892 bytes) and SHA1-matched the official Acidanthera OcBinaryData release (`7356a825b619cd954a4d83599d6032c38ab009d5`). config.plist `UEFI/Drivers/Add[0]` correctly referenced `HfsPlus.efi`.
+
+The file was NOT missing or corrupted at the binary level. The likely cause was FAT32 filesystem directory/allocation table corruption from the earlier 884 MB Sequoia BaseSystem.dmg copy operation to the same USB partition. The large file write may have corrupted neighboring FAT32 directory entries, making the file invisible to OpenCore's UEFI filesystem driver despite being readable from Windows/Linux.
+
+Also discovered: the build directory's `EFI/OC/Drivers/` folder was empty - drivers only existed on the USB, not in the repo's build directory.
+
+### Fix
+
+1. Downloaded fresh HfsPlus.efi from Acidanthera OcBinaryData repo as reference
+2. Populated the build directory's `EFI/OC/Drivers/` with all three drivers (HfsPlus.efi, OpenRuntime.efi, OpenCanopy.efi)
+3. Deleted all three drivers from USB and re-copied from build directory to force fresh FAT32 directory entries
+4. Verified SHA1 match between USB and build directory copies
+5. Cross-checked all config.plist driver references against folder contents (3/3 match)
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| HfsPlus.efi on USB | 37,892 bytes, SHA1 7356a825b619cd954a4d83599d6032c38ab009d5 |
+| OpenRuntime.efi on USB | 24,576 bytes, SHA1 c588ebc31358d3132673a424315d58c075efc134 |
+| OpenCanopy.efi on USB | 114,688 bytes, SHA1 b92d8cea37cbd7a6c495073eee9e14df73d88522 |
+| All config.plist drivers exist in folder | Yes (3/3) |
+| All folder drivers referenced in config.plist | Yes (3/3) |
+
+### Pattern
+
+| Issue | Pattern Category |
+|-------|-----------------|
+| Large file copy corrupting FAT32 directory entries | Filesystem Corruption (write side-effect) |
+| File present on disk but invisible to UEFI driver | Environmental Mismatch (OS vs firmware filesystem view) |
+| Build directory missing drivers (only on USB) | Sync Gap (source of truth incomplete) |
+
+### Prevention
+
+- After any large file write to a FAT32 USB, re-verify all existing files by deleting and re-copying them to force fresh directory entries
+- Keep the build directory's `EFI/OC/Drivers/` populated as the canonical source - never let the USB be the only copy
+- Run a driver cross-check (config.plist vs folder contents) before every boot attempt

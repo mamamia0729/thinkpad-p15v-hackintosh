@@ -1,6 +1,6 @@
 # ThinkPad P15v Gen 1 Hackintosh Build
 
-End-of-life Intel Hackintosh project on Lenovo ThinkPad P15v Gen 1 (20TRS00T00), targeting macOS Sonoma 14.7 as a macOS-only build.
+End-of-life Intel Hackintosh project on Lenovo ThinkPad P15v Gen 1 (20TRS00T00), targeting macOS Sequoia 15.x as a macOS-only build.
 
 ## Context: Why Hackintosh in 2026
 
@@ -55,6 +55,7 @@ Mode: UEFI
 | Audio Realtek ALC257 via Comet Lake cAVS | [8086:06c8] | AppleALC.kext, layout-id 17 |
 | Ethernet Intel I219-LM | [8086:0d4c] | IntelMausi.kext (native) |
 | NVMe SK hynix PC611 | [1c5c:1639] | INCOMPATIBLE - firmware-level NVMe command timeout panics (see Build Log) |
+| NVMe WD PC SN810 (replacement) | TBD | Pulled from HP ZBook - pending swap and macOS compatibility verification |
 | Camera Bison UVC | USB [5986:9106] | Native UVC |
 | Trackpad Synaptics I2C | I2C bus | VoodooI2C + VoodooI2CHID |
 | Fingerprint reader | USB [06cb:00bd] | No driver, accept loss |
@@ -66,13 +67,13 @@ Mode: UEFI
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| macOS version | Sonoma 14.7.x | Most stable Comet Lake support, mature kexts, security updates through 2026 |
+| macOS version | Sequoia 15.x | Upgraded from Sonoma 14.7.x - latest supported Intel macOS, extends security update window |
 | SMBIOS | MacBookPro16,1 | 16" 2019 MBP with i7-9750H 6c/12t Coffee Lake = closest match to Xeon W-10855M |
 | Wi-Fi | OpenIntelWireless, no card swap | AX201 is CNVi (integrated into PCH), AirDrop/Continuity not needed |
 | Audio | AppleALC + ALC257 layout-id 17 | Matches reference build |
 | dGPU | Disable NVIDIA P620 via SSDT-DDGPU.aml | Pascal architecture dead in modern macOS, iGPU drives everything |
 | Disk layout | Single OS, full disk macOS, wipe Ubuntu | Cleanest path, no dual-boot EFI complexity |
-| Storage target | SK hynix PC611 1TB NVMe (internal) | Single drive, full disk |
+| Storage target | WD PC SN810 NVMe (replacing SK hynix PC611) | Free pull from HP ZBook, replaces incompatible PC611 |
 
 ## Accepted Feature Losses
 
@@ -89,10 +90,10 @@ What WILL work: iCloud, iMessage, FaceTime, App Store, Camera, Audio, Sleep, Eth
 
 ```
 Stage 1: BIOS Settings              <- DONE
-Stage 2: Download macOS Installer   <- DONE
+Stage 2: Download macOS Installer   <- DONE (upgraded to Sequoia 15.x)
 Stage 3: Build OpenCore EFI         <- DONE
-Stage 4: Write Installer to USB     <- DONE
-Stage 5: Boot Installer + Wipe NVMe + Install macOS  <- BLOCKED (NVMe)
+Stage 4: Write Installer to USB     <- DONE (Sequoia recovery on USB)
+Stage 5: Boot Installer + Wipe NVMe + Install macOS  <- READY (pending physical NVMe swap to WD PC SN810)
 Stage 6: First Boot + Copy EFI to Internal Disk
 Stage 7: Post-Install Kexts + Polish (trackpad, audio, sleep)
 Stage 8: Validate iCloud, iMessage, App Store
@@ -141,7 +142,7 @@ Access: Reboot, press F1 at Lenovo splash.
 
 ## Stage 2 Preview: macOS Installer Download
 
-Will use OpenCore's `macrecovery.py` to download macOS Sonoma 14.7 installer files directly from Apple servers, running from Ubuntu. No Mac required to source the installer.
+Will use OpenCore's `macrecovery.py` to download macOS recovery installer files directly from Apple servers. No Mac required to source the installer. Originally downloaded Sonoma 14.6.1, later swapped to Sequoia 15.x.
 
 ## Kext Shopping List (Stage 3 Prep)
 
@@ -202,6 +203,27 @@ Stage 5 status: BLOCKED. Decision pending:
 - Option A: Try `nvme_force_uefi=1` boot arg, accept slower UEFI NVMe protocol, accept possible runtime panics under heavy I/O
 - Option B: Replace NVMe with Samsung 970 EVO Plus, WD SN770, or Crucial P5 Plus 1TB. Clone Ubuntu off PC611 first, swap drive, clean macOS install. Estimated cost $50 to $80, one-day delay.
 
+### Session 2: 2026-05-11 (NVMe solution found, installer upgraded to Sequoia)
+
+**Hardware discovery: Free WD PC SN810 NVMe from HP ZBook**
+
+Found a WD PC SN810 NVMe drive pulled from an old HP ZBook - free replacement for the incompatible SK hynix PC611. This resolves the Stage 5 NVMe blocker at zero cost (Option B fulfilled without purchase). Drive swap pending - physical NVMe replacement is next step before reattempting Stage 5.
+
+**Installer upgraded: Sonoma 14.6.1 -> Sequoia 15.x**
+
+Replaced the macOS recovery installer on the USB from Sonoma 14.6.1 to Sequoia 15.x:
+- Downloaded via `macrecovery.py -b Mac-937A206F2EE63C01 -m 00000000000000000 download` (product 696-28424, catalog 082-33203)
+- New BaseSystem.dmg: 884 MB (Sequoia) vs 753 MB (Sonoma)
+- Sonoma files backed up as BaseSystem_Sonoma_14.6.1.dmg/chunklist in staging directory
+- OpenCore EFI on USB left unchanged - same config works for both Sonoma and Sequoia
+- Rationale: Sequoia extends the security update window beyond Sonoma's EOL, and Comet Lake is fully supported
+
+**Boot error: HfsPlus.efi "cannot be found" after Sequoia copy**
+
+After swapping the NVMe and attempting Stage 5, OpenCore halted with `OC: Driver HfsPlus.efi at 0 cannot be found!`. The file was physically present and SHA1-matched the official binary - the 884 MB Sequoia copy likely corrupted FAT32 directory entries. Fixed by deleting and re-copying all three drivers from the build directory to USB. Also populated the previously-empty build directory `EFI/OC/Drivers/` as canonical source. See [BOOT-ERRORS.md](BOOT-ERRORS.md) Error 5 for full details.
+
+Stage 5 status: READY for boot retry (NVMe swapped, installer upgraded, HfsPlus.efi fixed).
+
 ## Lessons Learned (Session 1)
 
 1. PASS at file-presence level in pre-Stage-5 validation does not prove specific config values match the target hardware exactly. Static validation catches structural issues but not behavioral mismatches.
@@ -242,3 +264,5 @@ Issues encountered and their pattern category:
 | 2026-05-11 | Stage 4 | BLOCKER: config.plist PlatformInfo needs GenSMBIOS serials before first boot |
 | 2026-05-11 | Stage 4 | RESOLVED: GenSMBIOS serials generated, SSDT-XOSI added, ocvalidate clean |
 | 2026-05-11 | Stage 5 attempt 1 | VoodooInput duplicate UUID panic resolved on retry. Blocked on SK hynix PC611 NVMe command timeout. Decision pending: try nvme_force_uefi=1 boot arg, or swap NVMe to Samsung 970 EVO Plus class drive. |
+| 2026-05-11 | Pre-Stage 5 prep | NVMe blocker resolved: free WD PC SN810 from HP ZBook replaces incompatible PC611. Installer swapped from Sonoma 14.6.1 to Sequoia 15.x (884 MB). Physical NVMe swap pending. |
+| 2026-05-11 | Stage 5 attempt 2 | HfsPlus.efi "cannot be found" - FAT32 corruption from large file copy. Fixed by re-syncing drivers. Ready for boot retry. |
