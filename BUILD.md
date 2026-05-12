@@ -251,6 +251,7 @@ Issues encountered and their pattern category:
 | VoodooInput.kext loaded from standalone and nested plugin paths with mismatched UUIDs | Version Mismatch |
 | SK hynix PC611 NVMe firmware incompatible with macOS IONVMeFamily despite matching PCI device ID family | Hardware Constraint |
 | Hardware compatibility rated from PCI device ID alone misses firmware-level behavior issues | Missing Dependency |
+| AAPL,ig-platform-id mismatch causes WindowServer to fail bringup silently, system hangs in userspace without GUI | Version Mismatch / Hardware Constraint |
 
 ## Status Log
 
@@ -265,4 +266,5 @@ Issues encountered and their pattern category:
 | 2026-05-11 | Stage 4 | RESOLVED: GenSMBIOS serials generated, SSDT-XOSI added, ocvalidate clean |
 | 2026-05-11 | Stage 5 attempt 1 | VoodooInput duplicate UUID panic resolved on retry. Blocked on SK hynix PC611 NVMe command timeout. Decision pending: try nvme_force_uefi=1 boot arg, or swap NVMe to Samsung 970 EVO Plus class drive. |
 | 2026-05-11 | Pre-Stage 5 prep | NVMe blocker resolved: free WD PC SN810 from HP ZBook replaces incompatible PC611. Installer swapped from Sonoma 14.6.1 to Sequoia 15.x (884 MB). Physical NVMe swap pending. |
-| 2026-05-11 | Stage 5 attempt 2 | HfsPlus.efi "cannot be found" - FAT32 corruption from large file copy. Fixed by re-syncing drivers. Ready for boot retry. |
+| 2026-05-11 | Stage 5 attempt 2 | HfsPlus.efi "cannot be found" - FAT32 corruption from large file copy. Fixed by re-syncing drivers. USB reformatted as fresh FAT32 and re-written. Ready for boot retry. |
+| 2026-05-12 dawn | iGPU framebuffer workaround | Added `-igfxvesa` to NVRAM boot-args permanently after install hangs at WindowServer/userspace phase, even after NVMe swap to SN810. VESA mode bypasses iGPU framebuffer driver, slow but functional. To be removed post-install once correct AAPL,ig-platform-id is determined for UHD P630 on Comet Lake-H mobile. |
